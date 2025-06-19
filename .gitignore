@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+.env
+.env.*
+*.log
+npm-debug.log*
+# Mac/Windows
+.DS_Store
+Thumbs.db
+# VSCode
+.vscode/
+# Logs
+logs/
+*.log
+# OS generated
+Icon?
+# IDE
+.idea/
+*.iml
+# Coverage
+coverage/
+# Misc
+*.tgz
+*.swp
