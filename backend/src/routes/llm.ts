@@ -11,7 +11,30 @@ llmRouter.post('/generate-sql', async (req, res) => {
   if (!prompt || !schema) return res.status(400).json({ error: 'Prompt and schema are required' });
 
   // Compose LLM prompt with schema and user instructions
-  const systemPrompt = `You are an expert Oracle SQL assistant.\nGiven the following HR schema and user request, generate a single valid SQL query.\n\nSchema:\n${JSON.stringify(schema, null, 2)}\n\nUser request: ${prompt}\n\nRules:\n- Use only the tables and columns provided.\n- Follow business logic: active employee = CURRENT_EMPLOYEE_FLAG = 'Y'; hiring year = PPS_DATE_START; etc.\n- Output only the SQL, no explanation.`;
+  const systemPrompt = `You are an expert Oracle SQL assistant.
+Given the following HR schema and user request, generate a single valid SQL query.
+
+Schema:
+${JSON.stringify(schema, null, 2)}
+
+User request: ${prompt}
+
+Rules:
+- Use only the tables and columns provided.
+- Follow the business rules exactly as defined in the schema.
+- Pay special attention to the validValues for each column to ensure you use the correct values in WHERE clauses.
+- For active employees, use CURRENT_EMPLOYEE_FLAG = 'Y'.
+- For active assignments, follow the business rule: ASSIGNMENT_STATUS NOT IN ('Do Not Pay RU (DO NOT PROCESS)', 'LOA without Pay RU', 'LOAMA without Pay RU').
+- For regular assignments (not on leave), use: ASSIGNMENT_STATUS NOT LIKE '%Leave%' AND ASSIGNMENT_STATUS NOT LIKE '%LOA%'.
+- For paid assignments, use: ASSIGNMENT_STATUS NOT LIKE '%without Pay%' AND ASSIGNMENT_STATUS NOT LIKE '%w/o Pay%'.
+- For primary assignments, use IS_PRIMARY_ASSIGNMENT = 'Y'.
+- Use appropriate table aliases (e.g., p for PER_PEOPLE_AI_V, a for PER_ASSIGNMENTS_AI_V).
+- Output only the SQL, no explanation.`;
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'OpenAI API key is missing' });
+  }
 
   try {
     const response = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -24,13 +47,13 @@ llmRouter.post('/generate-sql', async (req, res) => {
       max_tokens: 512
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     });
     const sql = response.data.choices[0].message.content.trim();
     res.json({ sql });
-  } catch (err) {
-    res.status(500).json({ error: err.response?.data || err.message });
+  } catch (err: any) {
+    res.status(500).json({ error: err.response?.data || err.message || 'Unknown error occurred' });
   }
 });
