@@ -32,6 +32,9 @@ try {
 
 export const oracleRouter = express.Router();
 
+// Import the person extra info mapping
+import { personExtraInfoMapping } from '../mappings/personExtraInfoMapping';
+
 // Hardcoded schema metadata for LLM prompt and UI
 const HR_SCHEMA = {
   tables: [
@@ -56,6 +59,41 @@ const HR_SCHEMA = {
           'X': 'Not specified'
         }
       }
+    },
+    {
+      name: 'PER_PEOPLE_EXTRA_INFO',
+      description: 'Stores additional person information in a flexible schema with context-specific fields.',
+      columns: [
+        'PERSON_ID (FK)', 'INFORMATION_TYPE', 'PEI_INFORMATION1', 'PEI_INFORMATION2', 'PEI_INFORMATION3',
+        'PEI_INFORMATION4', 'PEI_INFORMATION5', 'PEI_INFORMATION6', 'PEI_INFORMATION7', 'PEI_INFORMATION8',
+        'PEI_INFORMATION9', 'PEI_INFORMATION10', 'PEI_INFORMATION11', 'PEI_INFORMATION12', 'PEI_INFORMATION13',
+        'PEI_INFORMATION14', 'PEI_INFORMATION15'
+      ],
+      relationships: [
+        { table: 'PER_PEOPLE_AI_V', localColumn: 'PERSON_ID', foreignColumn: 'PERSON_ID' }
+      ],
+      // Add information about the context codes and their field mappings
+      informationTypes: {
+        'PER_US_PASSPORT_DETAILS': 'Passport Details',
+        'RUHR_FISCHER': 'RUHR FISCHER',
+        'RUHR_PDA_APPLICATION_ROLE': 'Postdoc Alumni Application User Role',
+        'RUHR_EXCLUDE_USER': 'RUHR Exclude User',
+        'RUHR_ICIMS': 'RUHR iCIMS Details',
+        'RUHR_VISA': 'Rockefeller Visas',
+        'US_ETHNIC_ORIGIN': 'US Ethnic Origin',
+        'VETS 100A': 'VETS 100A',
+        'PER_US_VISA_DETAILS': 'Visa Details'
+      },
+      // Add information about how to query specific user-friendly fields
+      userFriendlyFields: Object.entries(personExtraInfoMapping).map(([fieldName, info]) => ({
+        fieldName,
+        informationType: info.information_type,
+        column: info.column,
+        description: info.description,
+        // Example SQL to join and select this field
+        exampleJoin: `JOIN PER_PEOPLE_EXTRA_INFO pei_${info.column} ON p.PERSON_ID = pei_${info.column}.PERSON_ID AND pei_${info.column}.information_type = '${info.information_type}'`,
+        exampleSelect: `pei_${info.column}.${info.column} AS "${fieldName}"`
+      }))
     },
     {
       name: 'PER_ASSIGNMENTS_AI_V',

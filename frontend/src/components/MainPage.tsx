@@ -5,12 +5,15 @@ import {
   Alert, 
   Snackbar, 
   Typography, 
-  Stack
+  Stack,
+  Tabs,
+  Tab
 } from '@mui/material';
 import Header from './Header';
 import QueryInput from './QueryInput';
 import QueryResults from './QueryResults';
 import SchemaViewer from './SchemaViewer';
+import ExtraInfoViewer from './ExtraInfoViewer';
 import { oracleService, llmService } from '../services/api';
 
 const MainPage: React.FC = () => {
@@ -21,6 +24,7 @@ const MainPage: React.FC = () => {
   const [generatedSql, setGeneratedSql] = useState<string>('');
   const [queryResults, setQueryResults] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [schemaTabValue, setSchemaTabValue] = useState<number>(0);
   const [notification, setNotification] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
@@ -141,6 +145,10 @@ const MainPage: React.FC = () => {
     setNotification({ ...notification, open: false });
   };
 
+  const handleSchemaTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSchemaTabValue(newValue);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header />
@@ -154,9 +162,20 @@ const MainPage: React.FC = () => {
         
         <Box sx={{ flexGrow: 1 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-            {/* Left column - Schema viewer */}
+            {/* Left column - Schema viewer and Extra Info */}
             <Box sx={{ width: { xs: '100%', md: '33%' } }}>
-              <SchemaViewer schema={schema} isLoading={isLoadingSchema} />
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs value={schemaTabValue} onChange={handleSchemaTabChange} aria-label="schema tabs">
+                  <Tab label="Database Schema" />
+                  <Tab label="Extra Info Types" />
+                </Tabs>
+              </Box>
+              
+              {schemaTabValue === 0 ? (
+                <SchemaViewer schema={schema} isLoading={isLoadingSchema} />
+              ) : (
+                <ExtraInfoViewer />
+              )}
             </Box>
             
             {/* Right column - Query input and results */}

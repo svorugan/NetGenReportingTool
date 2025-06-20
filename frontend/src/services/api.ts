@@ -66,6 +66,22 @@ const MOCK_SCHEMA = {
   ]
 };
 
+// Person Extra Info API services
+export const personExtraInfoService = {
+  // Get the person extra info schema
+  getSchema: async () => {
+    try {
+      console.log('API: Requesting person extra info schema...');
+      const response = await api.get('person-extra-info/schema');
+      console.log('API: Person extra info schema received:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: Error fetching person extra info schema:', error);
+      throw error;
+    }
+  }
+};
+
 // Oracle API services
 export const oracleService = {
   // Test the Oracle database connection

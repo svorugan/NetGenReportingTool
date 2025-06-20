@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { oracleRouter } from './routes/oracle';
 import { llmRouter } from './routes/llm';
+import { personExtraInfoRouter } from './routes/personExtraInfo';
 
 // Load environment variables
 dotenv.config();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/oracle', oracleRouter);
 app.use('/api/llm', llmRouter);
+app.use('/api/person-extra-info', personExtraInfoRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
