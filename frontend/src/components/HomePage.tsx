@@ -5,15 +5,19 @@ import {
   Paper,
   Typography,
   Button,
-  Card,
-  CardContent,
-  CardActions,
   Tooltip,
   CircularProgress,
   IconButton,
   ToggleButtonGroup,
   ToggleButton,
-  Dialog
+  Dialog,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
@@ -97,6 +101,8 @@ const HomePage: React.FC<HomePageProps> = ({
   const [isLoadingReports, setIsLoadingReports] = useState<boolean>(true);
   const [reportFilter, setReportFilter] = useState('all');
   const [displayedReports, setDisplayedReports] = useState<any[]>([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [reportStats, setReportStats] = useState({
     total: 0,
     hr: 0,
@@ -170,6 +176,17 @@ const HomePage: React.FC<HomePageProps> = ({
 
   const handleRunReport = async (sql: string) => {
     console.log('Running report with SQL:', sql);
+  };
+  
+  // Handle page change
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Handle rows per page change
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -249,51 +266,73 @@ const HomePage: React.FC<HomePageProps> = ({
                 <CircularProgress />
               </Box>
             ) : displayedReports.length > 0 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                {displayedReports.map((report) => (
-                  <Box key={report.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="h6" component="h3">
-                          {report.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                          {report.description || 'No description'}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          Created: {report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}
-                        </Typography>
-                      </CardContent>
-                      <CardActions>
-                        <Tooltip title="Run Report">
-                          <IconButton 
-                            size="small" 
-                            color="primary"
-                            onClick={() => handleRunReport(report.sql)}
-                          >
-                            <PlayArrowIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Schedule">
-                          <IconButton size="small">
-                            <ScheduleIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit">
-                          <IconButton size="small">
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton size="small" color="error">
-                            {/* Delete functionality to be implemented */}
-                          </IconButton>
-                        </Tooltip>
-                      </CardActions>
-                    </Card>
-                  </Box>
-                ))}
-              </Box>
+              <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                <TableContainer>
+                  <Table stickyHeader aria-label="reports table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Description</TableCell>
+                        <TableCell>Created</TableCell>
+                        <TableCell align="right">Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {displayedReports
+                        .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                        .map((report) => (
+                          <TableRow key={report.id} hover>
+                            <TableCell component="th" scope="row">
+                              {report.name}
+                            </TableCell>
+                            <TableCell>{report.description || 'No description'}</TableCell>
+                            <TableCell>
+                              {report.created_at ? new Date(report.created_at).toLocaleDateString() : 'N/A'}
+                            </TableCell>
+                            <TableCell align="right">
+                              <Tooltip title="Run Report">
+                                <IconButton 
+                                  size="small" 
+                                  color="primary"
+                                  onClick={() => handleRunReport(report.sql)}
+                                >
+                                  <PlayArrowIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Schedule">
+                                <IconButton size="small">
+                                  <ScheduleIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Edit">
+                                <IconButton size="small">
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete">
+                                <IconButton size="small" color="error">
+                                  {/* Delete functionality to be implemented */}
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TablePagination
+                  rowsPerPageOptions={[15, 25, 50]}
+                  component="div"
+                  count={displayedReports.length}
+                  rowsPerPage={rowsPerPage}
+                  page={page}
+                  onPageChange={(event, newPage) => setPage(newPage)}
+                  onRowsPerPageChange={(event) => {
+                    setRowsPerPage(parseInt(event.target.value, 10));
+                    setPage(0);
+                  }}
+                />
+              </Paper>
             ) : (
               <Box sx={{ py: 6, textAlign: 'center' }}>
                 <Typography color="text.secondary">No reports found in this category.</Typography>
