@@ -18,9 +18,9 @@ const Header: React.FC<HeaderProps> = ({ onLogout, children }) => {
         </Typography>
         {children}
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="subtitle2" sx={{ mr: 2 }}>
+          {/*<Typography variant="subtitle2" sx={{ mr: 2 }}>
             Oracle Database Connected
-          </Typography>
+          </Typography>*/}
           <Button 
             color="inherit" 
             onClick={onLogout}

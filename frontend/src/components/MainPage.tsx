@@ -18,9 +18,8 @@ import QueryInput from './QueryInput';
 import QueryResults from './QueryResults';
 import SchemaViewer from './SchemaViewer';
 import ExtraInfoViewer from './ExtraInfoViewer';
-// Import ReportsViewer component
-import ReportsViewer from './ReportsViewer';
-import { oracleService, llmService, reportsService } from '../services/api';
+
+import { oracleService, llmService } from '../services/api';
 
 interface MainPageProps {
   onLogout: () => void;
@@ -37,19 +36,15 @@ const MainPage: React.FC<MainPageProps> = ({ onLogout, onBackToHome }) => {
   const [queryResults, setQueryResults] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [schemaTabValue, setSchemaTabValue] = useState<number>(0);
-  const [mainTabValue, setMainTabValue] = useState<number>(0);
-  const [reports, setReports] = useState<any[]>([]);
-  const [isLoadingReports, setIsLoadingReports] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ open: boolean; message: string; type: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
     type: 'info'
   });
 
-  // Fetch schema and reports on component mount
+  // Fetch schema on component mount
   useEffect(() => {
     fetchSchema();
-    fetchReports();
   }, []);
 
   const fetchSchema = async () => {
@@ -166,50 +161,15 @@ const MainPage: React.FC<MainPageProps> = ({ onLogout, onBackToHome }) => {
     }
   };
   
-  const fetchReports = async () => {
-    setIsLoadingReports(true);
-    try {
-      const reportsData = await reportsService.getReports();
-      setReports(reportsData);
-    } catch (err: any) {
-      console.error('Error fetching reports:', err);
-      setNotification({
-        open: true,
-        message: `Failed to load reports: ${err.message}`,
-        type: 'error'
-      });
-    } finally {
-      setIsLoadingReports(false);
-    }
-  };
-  
-  const handleSaveReport = async (name: string, description: string, sql: string) => {
-    try {
-      await reportsService.saveReport(name, description, sql);
-      setNotification({
-        open: true,
-        message: 'Report saved successfully',
-        type: 'success'
-      });
-      // Refresh reports list
-      fetchReports();
-    } catch (err: any) {
-      console.error('Error saving report:', err);
-      setNotification({
-        open: true,
-        message: `Failed to save report: ${err.message}`,
-        type: 'error'
-      });
-    }
-  };
+
   
   const handleExportCsv = (data: any[]) => {
     try {
-      reportsService.exportReportCsv(data);
+      // Export CSV functionality (implementation removed with Saved Reports)
       setNotification({
         open: true,
-        message: 'CSV exported successfully',
-        type: 'success'
+        message: 'CSV export functionality is currently disabled',
+        type: 'info'
       });
     } catch (err: any) {
       console.error('Error exporting CSV:', err);
@@ -221,64 +181,15 @@ const MainPage: React.FC<MainPageProps> = ({ onLogout, onBackToHome }) => {
     }
   };
   
-  const handleRunReport = async (sql: string) => {
-    setGeneratedSql(sql);
-    setEditedSql('');
-    setMainTabValue(0); // Switch to query tab
-    await handleExecuteQuery();
-  };
-  
-  const handleDeleteReport = async (id: string) => {
-    try {
-      await reportsService.deleteReport(id);
-      setNotification({
-        open: true,
-        message: 'Report deleted successfully',
-        type: 'success'
-      });
-      // Refresh reports list
-      fetchReports();
-    } catch (err: any) {
-      console.error('Error deleting report:', err);
-      setNotification({
-        open: true,
-        message: `Failed to delete report: ${err.message}`,
-        type: 'error'
-      });
-    }
-  };
-  
-  const handleScheduleReport = async (reportId: string, schedule: any) => {
-    try {
-      await reportsService.scheduleReport(reportId, schedule);
-      setNotification({
-        open: true,
-        message: 'Report scheduled successfully',
-        type: 'success'
-      });
-      // Refresh reports list
-      fetchReports();
-    } catch (err: any) {
-      console.error('Error scheduling report:', err);
-      setNotification({
-        open: true,
-        message: `Failed to schedule report: ${err.message}`,
-        type: 'error'
-      });
-    }
-  };
+
 
   const handleCloseNotification = () => {
     setNotification(prev => ({ ...prev, open: false }));
   };
-
   const handleSchemaTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setSchemaTabValue(newValue);
   };
-  
-  const handleMainTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setMainTabValue(newValue);
-  };
+
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -300,65 +211,45 @@ const MainPage: React.FC<MainPageProps> = ({ onLogout, onBackToHome }) => {
           </Alert>
         )}
         
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={mainTabValue} onChange={handleMainTabChange} aria-label="main tabs">
-            <Tab label="Query Builder" />
-            <Tab label="Saved Reports" />
-          </Tabs>
-        </Box>
-        
-        {mainTabValue === 0 ? (
-          <Box sx={{ flexGrow: 1 }}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-              {/* Left column - Schema viewer and Extra Info */}
-              <Box sx={{ width: { xs: '100%', md: '33%' } }}>
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                  <Tabs value={schemaTabValue} onChange={handleSchemaTabChange} aria-label="schema tabs">
-                    <Tab label="Database Schema" />
-                    <Tab label="Extra Info Types" />
-                  </Tabs>
-                </Box>
-                
-                {schemaTabValue === 0 ? (
-                  <SchemaViewer schema={schema} isLoading={isLoadingSchema} />
-                ) : (
-                  <ExtraInfoViewer />
-                )}
+        <Box sx={{ flexGrow: 1 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+            {/* Left column - Schema viewer and Extra Info */}
+            <Box sx={{ width: { xs: '100%', md: '33%' } }}>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs value={schemaTabValue} onChange={handleSchemaTabChange} aria-label="schema tabs">
+                  <Tab label="Database Schema" />
+                  <Tab label="Extra Info Types" />
+                </Tabs>
               </Box>
               
-              {/* Right column - Query input and results */}
-              <Box sx={{ width: { xs: '100%', md: '67%' } }}>
-                <Stack spacing={3}>
-                  <QueryInput 
-                    onGenerateSQL={handleGenerateSQL} 
-                    isLoading={isGeneratingSql} 
-                  />
-                  
-                  <QueryResults 
-                    sql={generatedSql}
-                    results={queryResults}
-                    error={error}
-                    isExecuting={isExecutingQuery}
-                    onExecuteQuery={handleExecuteQuery}
-                    onSaveReport={handleSaveReport}
-                    onExportCsv={handleExportCsv}
-                    onSqlEdit={handleSqlEdit}
-                  />
-                </Stack>
-              </Box>
-            </Stack>
-          </Box>
-        ) : (
-          <Box sx={{ flexGrow: 1 }}>
-            <ReportsViewer 
-              reports={reports} 
-              isLoading={isLoadingReports} 
-              onRunReport={handleRunReport}
-              onDeleteReport={handleDeleteReport}
-              onScheduleReport={handleScheduleReport}
-            />
-          </Box>
-        )}
+              {schemaTabValue === 0 ? (
+                <SchemaViewer schema={schema} isLoading={isLoadingSchema} />
+              ) : (
+                <ExtraInfoViewer />
+              )}
+            </Box>
+            
+            {/* Right column - Query input and results */}
+            <Box sx={{ width: { xs: '100%', md: '67%' } }}>
+              <Stack spacing={3}>
+                <QueryInput 
+                  onGenerateSQL={handleGenerateSQL} 
+                  isLoading={isGeneratingSql} 
+                />
+                
+                <QueryResults 
+                  sql={generatedSql}
+                  results={queryResults}
+                  error={error}
+                  isExecuting={isExecutingQuery}
+                  onExecuteQuery={handleExecuteQuery}
+                  onExportCsv={handleExportCsv}
+                  onSqlEdit={handleSqlEdit}
+                />
+              </Stack>
+            </Box>
+          </Stack>
+        </Box>
       </Container>
       
       <Box component="footer" sx={{ py: 3, px: 2, mt: 'auto', backgroundColor: (theme) => theme.palette.grey[100] }}>

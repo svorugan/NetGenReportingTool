@@ -29,6 +29,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import StorageIcon from '@mui/icons-material/Storage';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import KeyIcon from '@mui/icons-material/Key';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 interface ApiKey {
   id: string;
@@ -44,6 +45,8 @@ interface LlmModel {
   apiKeys: ApiKey[];
 }
 interface SettingPageProps {
+  /** Optional handler to navigate back to dashboard/home */
+  onBackToHome?: () => void;
   dataSources: any[];
   setDataSources: (ds: any[]) => void;
   llmModels: LlmModel[];
@@ -308,7 +311,16 @@ const SettingPage: React.FC<SettingPageProps> = (props) => {
 
   return (
     <>
-      <Header onLogout={props.onLogout ?? (() => {})} />
+      <Header onLogout={props.onLogout ?? (() => {})}>
+        <Button 
+         color="inherit" 
+         onClick={props.onBackToHome}
+         startIcon={<ArrowBackIcon />}
+         sx={{ mr: 2 }}
+       >
+         Back to Dashboard
+       </Button>
+       </Header>
       <Container maxWidth="md">
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {/* Data Sources Section */}

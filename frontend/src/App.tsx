@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import MainPage from './components/MainPage';
 import HomePage from './components/HomePage';
@@ -36,8 +36,6 @@ const theme = createTheme({
     },
   },
 });
-
-import { useNavigate } from 'react-router-dom';
 
 function AppRoutes(props: any) {
   const navigate = useNavigate();
@@ -108,6 +106,7 @@ function AppRoutes(props: any) {
             dataSourceDialogOpen={dataSourceDialogOpen}
             setDataSourceDialogOpen={setDataSourceDialogOpen}
             llmModelDialogOpen={llmModelDialogOpen}
+            onBackToHome={() => navigate('/')}
             setLlmModelDialogOpen={setLlmModelDialogOpen}
             apiKeyDialogOpen={apiKeyDialogOpen}
             setApiKeyDialogOpen={setApiKeyDialogOpen}
