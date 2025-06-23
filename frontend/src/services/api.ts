@@ -1,4 +1,25 @@
 import axios from 'axios';
+import { MOCK_REPORTS } from './mockData';
+
+// Import HR_SCHEMA directly from the mock data
+const HR_SCHEMA = {
+  tables: [
+    {
+      name: 'PER_PEOPLE_EXTRA_INFO',
+      description: 'Stores additional person information in a flexible schema with context-specific fields.',
+      columns: [
+        'PERSON_ID (FK)', 'INFORMATION_TYPE', 'PEI_INFORMATION1', 'PEI_INFORMATION2', 'PEI_INFORMATION3',
+        'PEI_INFORMATION4', 'PEI_INFORMATION5', 'PEI_INFORMATION6', 'PEI_INFORMATION7', 'PEI_INFORMATION8',
+        'PEI_INFORMATION9', 'PEI_INFORMATION10', 'PEI_INFORMATION11', 'PEI_INFORMATION12', 'PEI_INFORMATION13',
+        'PEI_INFORMATION14', 'PEI_INFORMATION15'
+      ],
+      informationTypes: {
+        'PER_US_PASSPORT_DETAILS': 'Passport Details',
+        'RUHR_FISCHER': 'RUHR FISCHER'
+      }
+    }
+  ]
+};
 
 // Create an axios instance with default config
 const api = axios.create({
@@ -32,6 +53,30 @@ const MOCK_SCHEMA = {
           'F': 'Female',
           'X': 'Not specified'
         }
+      }
+    },
+    {
+      name: 'PER_PEOPLE_EXTRA_INFO',
+      description: 'Stores additional person information in a flexible schema with context-specific fields.',
+      columns: [
+        'PERSON_ID (FK)', 'INFORMATION_TYPE', 'PEI_INFORMATION1', 'PEI_INFORMATION2', 'PEI_INFORMATION3',
+        'PEI_INFORMATION4', 'PEI_INFORMATION5', 'PEI_INFORMATION6', 'PEI_INFORMATION7', 'PEI_INFORMATION8',
+        'PEI_INFORMATION9', 'PEI_INFORMATION10', 'PEI_INFORMATION11', 'PEI_INFORMATION12', 'PEI_INFORMATION13',
+        'PEI_INFORMATION14', 'PEI_INFORMATION15'
+      ],
+      relationships: [
+        { table: 'PER_PEOPLE_AI_V', localColumn: 'PERSON_ID', foreignColumn: 'PERSON_ID' }
+      ],
+      informationTypes: {
+        'PER_US_PASSPORT_DETAILS': 'Passport Details',
+        'RUHR_FISCHER': 'RUHR FISCHER',
+        'RUHR_PDA_APPLICATION_ROLE': 'Postdoc Alumni Application User Role',
+        'RUHR_EXCLUDE_USER': 'RUHR Exclude User',
+        'RUHR_ICIMS': 'RUHR iCIMS Details',
+        'RUHR_VISA': 'Rockefeller Visas',
+        'US_ETHNIC_ORIGIN': 'US Ethnic Origin',
+        'VETS 100A': 'VETS 100A',
+        'PER_US_VISA_DETAILS': 'Visa Details'
       }
     },
     {
@@ -183,6 +228,21 @@ export const llmService = {
       console.error('API: Error generating SQL:', error);
       throw new Error(`SQL generation failed: ${error.message}`);
     }
+  },
+  
+  // Suggest a report name based on SQL query
+  suggestReportName: async (sql: string): Promise<string> => {
+    try {
+      console.log('API: Requesting report name suggestion for SQL...');
+      const response = await api.post('llm/suggest-report-name', { sql });
+      console.log('API: Report name suggestion received:', response.data);
+      return response.data.name;
+    } catch (error) {
+      console.error('API: Error suggesting report name:', error);
+      // Generate a simple name based on the SQL
+      const defaultName = generateDefaultReportName(sql);
+      return defaultName;
+    }
   }
 };
 
@@ -254,6 +314,145 @@ function generateMockQueryResults(sql: string): any {
       ]
     };
   }
+}
+
+// Reports API services
+export const reportsService = {
+  // In-memory storage for mock reports
+  _reports: [...MOCK_REPORTS],
+  
+  getReports: async () => {
+    // In a real implementation, this would be an API call
+    console.log('Fetching reports');
+    return reportsService._reports;
+  },
+  
+  saveReport: async (name: string, description: string, sql: string) => {
+    // In a real implementation, this would be an API call
+    console.log('Saving report:', { name, description, sql });
+    
+    // Create a new report with a unique ID
+    const newReport = {
+      id: Date.now().toString(),
+      name,
+      description,
+      sql,
+      created_at: new Date().toISOString(),
+      schedule: null
+    };
+    
+    // Add to in-memory storage
+    reportsService._reports.push(newReport);
+    
+    return { success: true, report: newReport };
+  },
+  
+  deleteReport: async (id: string) => {
+    // In a real implementation, this would be an API call
+    console.log('Deleting report:', id);
+    
+    // Remove from in-memory storage
+    reportsService._reports = reportsService._reports.filter(report => report.id !== id);
+    
+    return { success: true };
+  },
+  
+  scheduleReport: async (id: string, schedule: any) => {
+    // In a real implementation, this would be an API call
+    console.log('Scheduling report:', { id, schedule });
+    
+    // Update the report in in-memory storage
+    const reportIndex = reportsService._reports.findIndex(report => report.id === id);
+    if (reportIndex !== -1) {
+      reportsService._reports[reportIndex].schedule = schedule;
+    }
+    
+    return { success: true };
+  },
+  
+  // Export report results as CSV
+  exportReportCsv: (data: any[]) => {
+    if (!data || data.length === 0) {
+      console.error('API: No data to export');
+      return;
+    }
+    
+    try {
+      // Convert data to CSV
+      const headers = Object.keys(data[0]).join(',');
+      const rows = data.map(row => Object.values(row).map(value => 
+        value === null ? '' : typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value
+      ).join(','));
+      const csv = [headers, ...rows].join('\n');
+      
+      // Create download link
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `report_${new Date().toISOString().slice(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('API: Error exporting CSV:', error);
+      throw error;
+    }
+  }
+};
+
+export const authService = {
+  // Login with username and password
+  login: async (username: string, password: string) => {
+    try {
+      console.log('API: Attempting login...');
+      const response = await api.post('auth/login', { username, password });
+      console.log('API: Login successful');
+      
+      // Store the token in localStorage
+      localStorage.setItem('authToken', response.data.token);
+      return response.data;
+    } catch (error) {
+      console.error('API: Login failed:', error);
+      throw error;
+    }
+  },
+  
+  // Logout user
+  logout: () => {
+    console.log('API: Logging out...');
+    localStorage.removeItem('authToken');
+  },
+  
+  // Check if user is authenticated
+  isAuthenticated: () => {
+    return !!localStorage.getItem('authToken');
+  }
+};
+
+// Helper function to generate a default report name based on SQL
+function generateDefaultReportName(sql: string): string {
+  const lowercaseSql = sql.toLowerCase();
+  let name = 'New Report';
+  
+  // Try to extract table names
+  const fromMatch = lowercaseSql.match(/from\s+(\w+)/i);
+  if (fromMatch && fromMatch[1]) {
+    const tableName = fromMatch[1].replace(/per_|_ai_v/gi, '').replace(/_/g, ' ');
+    name = tableName.charAt(0).toUpperCase() + tableName.slice(1).toLowerCase() + ' Report';
+  }
+  
+  // Check for common query types
+  if (lowercaseSql.includes('count(*)')) {
+    name = 'Count Report';
+  } else if (lowercaseSql.includes('group by')) {
+    name = 'Summary Report';
+  } else if (lowercaseSql.includes('join')) {
+    name = 'Joined Data Report';
+  }
+  
+  return name + ' ' + new Date().toISOString().slice(0,10);
 }
 
 export default api;
