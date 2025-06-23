@@ -20,6 +20,7 @@ import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -187,8 +188,11 @@ const HomePage: React.FC<HomePageProps> = ({
             >
               Create New Report
             </Button>
-            <IconButton onClick={() => navigate('/settings')}>
+            <IconButton onClick={() => navigate('/settings')} color="inherit" title="Settings">
               <SettingsIcon />
+            </IconButton>
+            <IconButton onClick={onLogout} color="inherit" title="Logout">
+              <LogoutIcon />
             </IconButton>
           </Box>
         </Box>
