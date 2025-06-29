@@ -81,20 +81,41 @@ const MOCK_SCHEMA = {
     },
     {
       name: 'PER_ASSIGNMENTS_AI_V',
-      description: 'Stores current assignment information for employees.',
+      description: 'Stores current (as of sysdate) assignment information for employees, including job, organization, and payroll details.',
       columns: [
         'PERSON_ID (FK)', 'ASSIGNMENT_ID (PK)', 'JOB_NAME', 'ORGANIZATION_NAME', 'POSITION_NAME',
         'PAYROLL_NAME', 'ASSIGNMENT_STATUS', 'ASSIGNMENT_TYPE', 'GRADE', 'EMPLOYMENT_TYPE', 'IS_PRIMARY_ASSIGNMENT'
       ],
+      columnDescriptions: {
+        'PERSON_ID': 'Foreign key linking to PER_PEOPLE_AI_V.PERSON_ID, identifies the employee',
+        'ASSIGNMENT_ID': 'Primary key for the assignment record',
+        'JOB_NAME': 'Name of the job position',
+        'ORGANIZATION_NAME': 'Department or organization name the employee belongs to',
+        'POSITION_NAME': 'Specific position title within the job',
+        'PAYROLL_NAME': 'Payroll group the employee belongs to',
+        'ASSIGNMENT_STATUS': 'Current status of the assignment (active, leave, etc.)',
+        'ASSIGNMENT_TYPE': 'Type of assignment',
+        'GRADE': 'Pay grade or level',
+        'EMPLOYMENT_TYPE': 'Employment category (full-time, part-time, etc.)',
+        'IS_PRIMARY_ASSIGNMENT': 'Indicates if this is the employee\'s primary assignment (Y) or secondary (N)'
+      },
+      relationships: [
+        { table: 'PER_PEOPLE_AI_V', localColumn: 'PERSON_ID', foreignColumn: 'PERSON_ID' }
+      ],
       validValues: {
         'ASSIGNMENT_STATUS': {
-          'Active': 'Active assignment',
-          'Inactive': 'Inactive assignment',
-          'Leave': 'On leave'
+          'Do Not Pay RU (DO NOT PROCESS)': 'Do not process payment',
+          'FMLA Leave': 'Family and Medical Leave Act leave',
+          'FMLA Paid Leave': 'Paid Family and Medical Leave Act leave',
+          'LOA with Pay': 'Leave of absence with pay',
+          'LOA without Pay RU': 'Leave of absence without pay',
+          'Active': 'Active assignment'
         },
         'EMPLOYMENT_TYPE': {
           'FULL_TIME': 'Full-time employee',
-          'PART_TIME': 'Part-time employee'
+          'PART_TIME': 'Part-time employee',
+          'CONTRACT': 'Contract worker',
+          'TEMPORARY': 'Temporary worker'
         },
         'IS_PRIMARY_ASSIGNMENT': {
           'Y': 'Primary assignment',
@@ -253,10 +274,23 @@ function generateMockSql(prompt: string, schema: any): string {
   const lowercasePrompt = prompt.toLowerCase();
   
   // Generate simple SQL based on keywords in the prompt
-  if (lowercasePrompt.includes('count')) {
+  if (lowercasePrompt.includes('count') && (lowercasePrompt.includes('department') || lowercasePrompt.includes('organization'))) {
+    // Count employees by department/organization
+    return `SELECT a.ORGANIZATION_NAME, COUNT(*) AS employee_count 
+FROM PER_PEOPLE_AI_V p 
+JOIN PER_ASSIGNMENTS_AI_V a ON p.PERSON_ID = a.PERSON_ID 
+WHERE p.CURRENT_EMPLOYEE_FLAG = 'Y' AND a.IS_PRIMARY_ASSIGNMENT = 'Y' 
+GROUP BY a.ORGANIZATION_NAME 
+ORDER BY a.ORGANIZATION_NAME`;
+  } else if (lowercasePrompt.includes('count')) {
     return `SELECT COUNT(*) AS employee_count FROM PER_PEOPLE_AI_V WHERE CURRENT_EMPLOYEE_FLAG = 'Y'`;
   } else if (lowercasePrompt.includes('average') || lowercasePrompt.includes('avg')) {
     return `SELECT AVG(LENGTH(FIRST_NAME)) AS avg_name_length FROM PER_PEOPLE_AI_V`;
+  } else if (lowercasePrompt.includes('department') || lowercasePrompt.includes('organization')) {
+    // List all departments/organizations
+    return `SELECT DISTINCT a.ORGANIZATION_NAME 
+FROM PER_ASSIGNMENTS_AI_V a 
+ORDER BY a.ORGANIZATION_NAME`;
   } else if (lowercasePrompt.includes('assignment') || lowercasePrompt.includes('job')) {
     return `SELECT p.PERSON_ID, p.FULL_NAME, a.JOB_NAME, a.ORGANIZATION_NAME 
 FROM PER_PEOPLE_AI_V p 
